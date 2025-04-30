@@ -45,9 +45,18 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Option<Statement> {
         match self.cur_token {
             Token::Let => self.parse_let_statement(),
-            Token::Return => todo!(),
+            Token::Return => self.parse_return_statement(),
             _ => None,
         }
+    }
+
+    fn parse_return_statement(&mut self) -> Option<Statement> {
+        self.next_token();
+
+        while !self.cur_token_is(Token::Semicolon) {
+            self.next_token();
+        }
+        return Some(Statement::Return(Expression::Expression));
     }
 
     fn parse_let_statement(&mut self) -> Option<Statement> {
@@ -119,6 +128,31 @@ mod tests {
                     assert_eq!(tests[idx], name, "identifier name doesn't match.")
                 }
                 _ => assert!(false, "not a let statement"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_statement() {
+        let input = r#"
+            return 5;
+            return 10;
+            return 993322;
+        "#;
+        let l = lexer::Lexer::new(input);
+        let mut parser = Parser::new(l);
+        let program = parser.parse_program();
+
+        assert_eq!(
+            program.statements.len(),
+            3,
+            "program.statetments does not contain 3 statements. got={}",
+            program.statements.len()
+        );
+
+        for stmt in program.statements {
+            if !matches!(stmt, Statement::Return(_)) {
+                panic!("not a return statement");
             }
         }
     }
