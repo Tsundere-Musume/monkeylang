@@ -48,9 +48,9 @@ impl fmt::Display for Expression {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::{Expression, Identifier, Program, Statement};
-
     #[test]
     fn test_ast_string() {
         let program = Program {
