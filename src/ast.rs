@@ -1,4 +1,6 @@
-use std::fmt::{self, write};
+use std::fmt;
+
+use crate::token::Token;
 
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -37,7 +39,7 @@ impl fmt::Display for Statement {
 pub enum Expression {
     Identifier(Identifier),
     Integer(i64),
-    Prefix { op: String, right: Box<Expression> },
+    Prefix { op: Token, right: Box<Expression> },
     Expression,
 }
 

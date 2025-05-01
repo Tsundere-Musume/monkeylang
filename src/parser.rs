@@ -73,7 +73,21 @@ impl<'a> Parser<'a> {
         match &self.cur_token {
             Token::Ident(val) => Some(Expression::Identifier(Identifier(val.clone()))),
             Token::Int(val) => Some(Expression::Integer(*val)),
+            Token::Bang => self.parse_prefix_expression(),
+            Token::Minus => self.parse_prefix_expression(),
             _ => None,
+        }
+    }
+
+    fn parse_prefix_expression(&mut self) -> Option<Expression> {
+        let token = self.cur_token.clone();
+        self.next_token();
+        match self.parse_expression(Precedence::Prefix) {
+            Some(exp) => Some(Expression::Prefix {
+                op: token,
+                right: Box::new(exp),
+            }),
+            None => None,
         }
     }
 

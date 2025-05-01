@@ -2,6 +2,7 @@ use crate::{
     ast::{Expression, Identifier, Statement},
     lexer,
     parser::Parser,
+    token::Token,
 };
 
 //TODO: parser errors
@@ -109,7 +110,43 @@ fn test_integer_literal_expression() {
     };
 }
 
-
 #[test]
-fn test_parsing_prefix_expressions{
+fn test_parsing_prefix_expressions() {
+    let tests = vec![("!5", Token::Bang, "!", 5), ("-15", Token::Minus, "-", 15)];
+
+    for (input, ex_tok, ex_op, val) in tests {
+        let l = lexer::Lexer::new(input);
+        let mut parser = Parser::new(l);
+        let program = parser.parse_program();
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program.statement does not contain {} statements. got = {}",
+            1,
+            program.statements.len()
+        );
+
+        let stmt = &program.statements[0];
+        match stmt {
+            Statement::ExpressionStmt(Expression::Prefix { op, right }) => {
+                assert_eq!(
+                    ex_tok, *op,
+                    "prefix expresion token doesn't match: {:?}, got = {:?}",
+                    ex_tok, op
+                );
+                assert_eq!(
+                    ex_op,
+                    (*op).to_string().as_str(),
+                    "prefix expression operator str don't match: {}, got = {}",
+                    ex_op,
+                    (*op).to_string().as_str()
+                );
+                match **right {
+                    Expression::Integer(v) => assert_eq!(v, val),
+                    _ => panic!("boxed value is not an integer"),
+                }
+            }
+            _ => panic!("not a infix expression"),
+        }
+    }
 }
