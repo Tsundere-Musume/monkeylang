@@ -1,3 +1,5 @@
+use core::panic;
+
 use crate::{
     ast::{Expression, Identifier, Statement},
     lexer,
@@ -148,5 +150,85 @@ fn test_parsing_prefix_expressions() {
             }
             _ => panic!("not a infix expression"),
         }
+    }
+}
+
+#[test]
+fn test_parsing_infix_expressions() {
+    let tests = vec![
+        ("5 + 5", 5, Token::Plus, "+", 5),
+        ("5 - 5;", 5, Token::Minus, "-", 5),
+        ("5 * 5;", 5, Token::Asterisk, "*", 5),
+        ("5 / 5;", 5, Token::Slash, "/", 5),
+        ("5 > 5;", 5, Token::Gt, ">", 5),
+        ("5 < 5;", 5, Token::Lt, "<", 5),
+        ("5 == 5;", 5, Token::Eq, "==", 5),
+        ("5 != 5;", 5, Token::NotEq, "!=", 5),
+    ];
+    for (input, ex_left, ex_tok, ex_op, ex_right) in tests {
+        let l = lexer::Lexer::new(input);
+        let mut parser = Parser::new(l);
+        let program = parser.parse_program();
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program.statement does not contain {} statements. got = {}",
+            1,
+            program.statements.len()
+        );
+
+        match &program.statements[0] {
+            Statement::ExpressionStmt(Expression::Infix { left, op, right }) => {
+                match **left {
+                    Expression::Integer(v) => assert_eq!(v, ex_left),
+                    _ => panic!("left value is not an integer: {:?}", left),
+                }
+                assert_eq!(
+                    ex_tok, *op,
+                    "infix expresion token doesn't match: {:?}, got = {:?}",
+                    ex_tok, op
+                );
+                assert_eq!(
+                    ex_op,
+                    (*op).to_string().as_str(),
+                    "infix expression operator str don't match: {}, got = {}",
+                    ex_op,
+                    (*op).to_string().as_str()
+                );
+                match **right {
+                    Expression::Integer(v) => assert_eq!(v, ex_right),
+                    _ => panic!("right value is not an integer: {:?}", right),
+                }
+            }
+            _ => panic!("not an infix expression: {}", &program.statements[0]),
+        };
+    }
+}
+
+#[test]
+fn test_operator_precedence_parsing() {
+    let tests = vec![
+        ("-a * b", "((-a) * b)"),
+        ("!-a", "(!(-a))"),
+        ("a + b + c", "((a + b) + c)"),
+        ("a + b - c", "((a + b) - c)"),
+        ("a * b * c", "((a * b) * c)"),
+        ("a * b / c", "((a * b) / c)"),
+        ("a + b / c", "(a + (b / c))"),
+        ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+        ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+        ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+        ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+        (
+            "3 + 4 * 5 == 3 * 1 + 4 * 5",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        ),
+    ];
+
+    for (input, expected) in tests {
+        let l = lexer::Lexer::new(input);
+        let mut parser = Parser::new(l);
+        let program = parser.parse_program();
+        assert_eq!(program.to_string(), expected);
     }
 }

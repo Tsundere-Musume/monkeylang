@@ -29,8 +29,9 @@ impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Statement::*;
         match self {
-            Let(ident, expr) => write!(f, "let {} = {}", ident.0, expr),
-            _ => write!(f, ""),
+            Let(ident, expr) => write!(f, "let {} = {};", ident.0, expr),
+            Return(expr) => write!(f, "return {}", expr),
+            ExpressionStmt(expr) => write!(f, "{}", expr),
         }
     }
 }
@@ -39,7 +40,15 @@ impl fmt::Display for Statement {
 pub enum Expression {
     Identifier(Identifier),
     Integer(i64),
-    Prefix { op: Token, right: Box<Expression> },
+    Prefix {
+        op: Token,
+        right: Box<Expression>,
+    },
+    Infix {
+        left: Box<Expression>,
+        op: Token,
+        right: Box<Expression>,
+    },
     Expression,
 }
 
@@ -49,6 +58,7 @@ impl fmt::Display for Expression {
             Expression::Identifier(ident) => write!(f, "{}", ident.0),
             Expression::Integer(val) => write!(f, "{}", val),
             Expression::Prefix { op, right } => write!(f, "({}{})", op, right),
+            Expression::Infix { left, op, right } => write!(f, "({} {} {})", left, op, right),
             Expression::Expression => write!(f, ""),
         }
     }
@@ -67,7 +77,7 @@ mod tests {
         };
         assert_eq!(
             program.to_string(),
-            "let my_var = another_var",
+            "let my_var = another_var;",
             "program.to_string() wrong. got = {}",
             program.to_string()
         );
