@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::{self, write};
 
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -36,6 +36,8 @@ impl fmt::Display for Statement {
 #[derive(Debug)]
 pub enum Expression {
     Identifier(Identifier),
+    Integer(i64),
+    Prefix { op: String, right: Box<Expression> },
     Expression,
 }
 
@@ -43,6 +45,8 @@ impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expression::Identifier(ident) => write!(f, "{}", ident.0),
+            Expression::Integer(val) => write!(f, "{}", val),
+            Expression::Prefix { op, right } => write!(f, "({}{})", op, right),
             Expression::Expression => write!(f, ""),
         }
     }

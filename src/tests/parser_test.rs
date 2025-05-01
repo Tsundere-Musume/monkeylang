@@ -4,6 +4,7 @@ use crate::{
     parser::Parser,
 };
 
+//TODO: parser errors
 #[test]
 fn test_let_statement() {
     let input = r#"
@@ -84,4 +85,31 @@ fn test_return_statement() {
             panic!("not a return statement");
         }
     }
+}
+
+#[test]
+fn test_integer_literal_expression() {
+    let input = "5;";
+    let l = lexer::Lexer::new(input);
+    let mut parser = Parser::new(l);
+    let program = parser.parse_program();
+
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program.statetments does not contain 1 statements. got={}",
+        program.statements.len()
+    );
+
+    match program.statements[0] {
+        Statement::ExpressionStmt(Expression::Integer(val)) => {
+            assert_eq!(val, 5, "integer value not {}, got = {}", 5, val)
+        }
+        _ => panic!("not a integer literal expression"),
+    };
+}
+
+
+#[test]
+fn test_parsing_prefix_expressions{
 }

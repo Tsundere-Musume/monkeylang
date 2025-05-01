@@ -72,6 +72,7 @@ impl<'a> Parser<'a> {
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
         match &self.cur_token {
             Token::Ident(val) => Some(Expression::Identifier(Identifier(val.clone()))),
+            Token::Int(val) => Some(Expression::Integer(*val)),
             _ => None,
         }
     }
