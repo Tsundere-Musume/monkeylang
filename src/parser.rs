@@ -6,6 +6,7 @@ use crate::{
 
 #[derive(PartialEq, PartialOrd)]
 enum Precedence {
+    //TODO
     Lowest,
     Equals,
     LessGreater,
@@ -80,6 +81,7 @@ impl<'a> Parser<'a> {
             Token::Ident(val) => Some(Expression::Identifier(Identifier(val.clone()))),
             Token::Int(val) => Some(Expression::Integer(*val)),
             Token::Bang | Token::Minus => self.parse_prefix_expression(),
+            Token::True | Token::False => Some(Expression::Boolean(self.cur_token_is(Token::True))),
             _ => return None,
         };
 
@@ -192,6 +194,7 @@ impl<'a> Parser<'a> {
     fn cur_token_is(&self, token: Token) -> bool {
         token == self.cur_token
     }
+
     fn peek_token_is(&self, token: Token) -> bool {
         token == self.peek_token
     }

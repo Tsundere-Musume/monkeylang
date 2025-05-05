@@ -49,6 +49,7 @@ pub enum Expression {
         op: Token,
         right: Box<Expression>,
     },
+    Boolean(bool),
     Expression,
 }
 
@@ -59,6 +60,7 @@ impl fmt::Display for Expression {
             Expression::Integer(val) => write!(f, "{}", val),
             Expression::Prefix { op, right } => write!(f, "({}{})", op, right),
             Expression::Infix { left, op, right } => write!(f, "({} {} {})", left, op, right),
+            Expression::Boolean(val) => write!(f, "{}", val),
             Expression::Expression => write!(f, ""),
         }
     }

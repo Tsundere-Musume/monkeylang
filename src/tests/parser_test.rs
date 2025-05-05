@@ -232,3 +232,31 @@ fn test_operator_precedence_parsing() {
         assert_eq!(program.to_string(), expected);
     }
 }
+
+#[test]
+fn test_boolean_expression() {
+    let tests = vec![("true", true), ("false", false)];
+
+    for (input, expected) in tests {
+        let l = lexer::Lexer::new(input);
+        let mut parser = Parser::new(l);
+        let program = parser.parse_program();
+        assert_eq!(
+            program.statements.len(),
+            1,
+            "program.statetments does not contain 1 statements. got={}",
+            program.statements.len()
+        );
+
+        match program.statements[0] {
+            Statement::ExpressionStmt(Expression::Boolean(val)) => {
+                assert_eq!(
+                    val, expected,
+                    "boolean value not {}, got = {}",
+                    expected, val
+                )
+            }
+            _ => panic!("not a boolean literal expression"),
+        };
+    }
+}
