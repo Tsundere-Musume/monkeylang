@@ -50,6 +50,11 @@ pub enum Expression {
         right: Box<Expression>,
     },
     Boolean(bool),
+    If {
+        condition: Box<Expression>,
+        consequence: BlockStatement,
+        alternative: Option<BlockStatement>,
+    },
     Expression,
 }
 
@@ -61,8 +66,36 @@ impl fmt::Display for Expression {
             Expression::Prefix { op, right } => write!(f, "({}{})", op, right),
             Expression::Infix { left, op, right } => write!(f, "({} {} {})", left, op, right),
             Expression::Boolean(val) => write!(f, "{}", val),
+            Expression::If {
+                condition,
+                consequence,
+                alternative,
+            } => {
+                let mut repr = String::from("if");
+                repr.push_str(condition.to_string().as_str());
+                repr.push(' ');
+                repr.push_str(consequence.to_string().as_str());
+                if let Some(alt) = alternative {
+                    repr.push_str("else ");
+                    repr.push_str(alt.to_string().as_str());
+                }
+                write!(f, "{}", repr)
+            }
             Expression::Expression => write!(f, ""),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct BlockStatement(Vec<Statement>);
+
+impl fmt::Display for BlockStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let BlockStatement(statements) = self;
+        for statement in statements {
+            write!(f, "{}", statement)?
+        }
+        Ok(())
     }
 }
 
