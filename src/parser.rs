@@ -84,6 +84,7 @@ impl<'a> Parser<'a> {
             Token::True | Token::False => Some(Expression::Boolean(self.cur_token_is(Token::True))),
             Token::Lparen => self.parse_grouped_expression(),
             Token::If => self.parse_if_expression(),
+            Token::Function => self.parse_function_literal(),
             _ => return None,
         };
 
@@ -105,6 +106,55 @@ impl<'a> Parser<'a> {
             }
         }
         return left_exp;
+    }
+
+    fn parse_function_literal(&mut self) -> Option<Expression> {
+        if !self.expect_peek(Token::Lparen) {
+            return None;
+        }
+
+        let parameters = match self.parse_function_parameters() {
+            Some(params) => params,
+            //TODO: parse the function body before returing the error
+            None => return None,
+        };
+
+        if !self.expect_peek(Token::Lbrace) {
+            return None;
+        }
+        let body = self.parse_block_statement();
+
+        Some(Expression::Function { parameters, body })
+    }
+
+    fn parse_function_parameters(&mut self) -> Option<Vec<Expression>> {
+        let mut params = vec![];
+
+        if self.peek_token_is(Token::Rparen) {
+            self.next_token();
+            return Some(params);
+        }
+
+        self.next_token();
+        match &self.cur_token {
+            Token::Ident(val) => params.push(Expression::Identifier(Identifier(val.clone()))),
+            _ => todo!("error handling for arguments"),
+        };
+
+        while self.peek_token_is(Token::Comma) {
+            self.next_token();
+            self.next_token();
+            match &self.cur_token {
+                Token::Ident(val) => params.push(Expression::Identifier(Identifier(val.clone()))),
+                _ => todo!("error handling for arguments"),
+            };
+        }
+
+        if !self.expect_peek(Token::Rparen) {
+            return None;
+        }
+
+        Some(params)
     }
 
     fn parse_if_expression(&mut self) -> Option<Expression> {

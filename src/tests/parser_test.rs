@@ -272,7 +272,6 @@ fn test_if_expression() {
     let l = lexer::Lexer::new(input);
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
-    println!("--\n{}\n--", program);
     assert_eq!(
         program.statements.len(),
         1,
@@ -315,7 +314,6 @@ fn test_if_else_expression() {
     let l = lexer::Lexer::new(input);
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
-    println!("--\n{}\n--", program);
     assert_eq!(
         program.statements.len(),
         1,
@@ -380,4 +378,95 @@ fn assert_infix_expression(expression: &Expression, left: &str, operator: Token,
         "conditional expression don't match: {}, got: {}",
         expression, expected
     );
+}
+
+#[test]
+fn test_function_literal_parsing() {
+    let input = "fn(x, y) { x + y; }";
+
+    let l = lexer::Lexer::new(input);
+    let mut parser = Parser::new(l);
+    let program = parser.parse_program();
+
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program.statetments does not contain 1 statements. got={}",
+        program.statements.len()
+    );
+
+    match &program.statements[0] {
+        Statement::ExpressionStmt(Expression::Function { parameters, body }) => {
+            assert_eq!(
+                parameters.len(),
+                2,
+                "function literal parameters wrong, want 2, got = {}",
+                parameters.len()
+            );
+
+            assert_eq!(
+                parameters[0],
+                Expression::Identifier(Identifier(String::from("x"))),
+                "expecting identifier {}, got = {}",
+                "x",
+                parameters[0]
+            );
+
+            assert_eq!(
+                parameters[1],
+                Expression::Identifier(Identifier(String::from("y"))),
+                "expecting identifier {}, got = {}",
+                "y",
+                parameters[1]
+            );
+
+            match &body.0[0] {
+                Statement::ExpressionStmt(infix) => {
+                    assert_infix_expression(infix, "x", Token::Plus, "y")
+                }
+                _ => panic!("statement should be an infix expression statement"),
+            }
+        }
+        _ => panic!("program.statements[0] is not a function expression"),
+    }
+}
+
+#[test]
+fn test_function_parameter_parsing() {
+    let tests = vec![
+        ("fn() {};", vec![]),
+        ("fn(x) {};", vec!["x"]),
+        ("fn(x, y, z) {};", vec!["x", "y", "z"]),
+    ];
+
+    for (input, expected_params) in tests {
+        let l = lexer::Lexer::new(input);
+        let mut parser = Parser::new(l);
+        let program = parser.parse_program();
+
+        match &program.statements[0] {
+            Statement::ExpressionStmt(Expression::Function {
+                parameters,
+                body: _,
+            }) => {
+                assert_eq!(
+                    parameters.len(),
+                    expected_params.len(),
+                    "length parameters wrong, want = {}, got = {}",
+                    expected_params.len(),
+                    parameters.len()
+                );
+
+                for (idx, ident) in expected_params.iter().enumerate() {
+                    match &parameters[idx] {
+                        Expression::Identifier(Identifier(val)) => {
+                            assert_eq!(val, ident, "identifier value not {}, got {}", ident, val);
+                        }
+                        _ => panic!("expected an identifier expression"),
+                    }
+                }
+            }
+            _ => panic!("not a function literal"),
+        };
+    }
 }

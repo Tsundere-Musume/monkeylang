@@ -55,6 +55,10 @@ pub enum Expression {
         consequence: BlockStatement,
         alternative: Option<BlockStatement>,
     },
+    Function {
+        parameters: Vec<Expression>,
+        body: BlockStatement,
+    },
     Expression,
 }
 
@@ -80,6 +84,19 @@ impl fmt::Display for Expression {
                     repr.push_str(alt.to_string().as_str());
                 }
                 write!(f, "{}", repr)
+            }
+
+            Expression::Function { parameters, body } => {
+                let parameters = parameters.iter().fold(String::new(), |mut acc, p| {
+                    if acc.is_empty() {
+                       acc.push_str(p.to_string().as_str());
+                    } else {
+                        acc.push_str(", ");
+                        acc.push_str(p.to_string().as_str());
+                    }
+                    acc
+                });
+                write!(f, "fn({}) {}", parameters, body)
             }
             Expression::Expression => write!(f, ""),
         }
