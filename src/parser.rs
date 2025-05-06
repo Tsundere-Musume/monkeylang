@@ -82,6 +82,7 @@ impl<'a> Parser<'a> {
             Token::Int(val) => Some(Expression::Integer(*val)),
             Token::Bang | Token::Minus => self.parse_prefix_expression(),
             Token::True | Token::False => Some(Expression::Boolean(self.cur_token_is(Token::True))),
+            Token::Lparen => self.parse_grouped_expression(),
             _ => return None,
         };
 
@@ -103,6 +104,18 @@ impl<'a> Parser<'a> {
             }
         }
         return left_exp;
+    }
+
+    fn parse_grouped_expression(&mut self) -> Option<Expression> {
+        self.next_token();
+
+        let expression = self.parse_expression(Precedence::Lowest);
+
+        if !self.expect_peek(Token::Rparen) {
+            None
+        } else {
+            expression
+        }
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
