@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expression, Identifier, Program, Statement},
+    ast::{BlockStatement, Expression, Identifier, Program, Statement},
     lexer::Lexer,
     token::Token,
 };
@@ -83,6 +83,7 @@ impl<'a> Parser<'a> {
             Token::Bang | Token::Minus => self.parse_prefix_expression(),
             Token::True | Token::False => Some(Expression::Boolean(self.cur_token_is(Token::True))),
             Token::Lparen => self.parse_grouped_expression(),
+            Token::If => self.parse_if_expression(),
             _ => return None,
         };
 
@@ -104,6 +105,59 @@ impl<'a> Parser<'a> {
             }
         }
         return left_exp;
+    }
+
+    fn parse_if_expression(&mut self) -> Option<Expression> {
+        if !self.expect_peek(Token::Lparen) {
+            return None;
+        }
+        self.next_token();
+
+        let condition = match self.parse_expression(Precedence::Lowest) {
+            Some(cond) => cond,
+            None => return None,
+        };
+
+        if !self.expect_peek(Token::Rparen) {
+            return None;
+        }
+
+        if !self.expect_peek(Token::Lbrace) {
+            return None;
+        }
+
+        let consequence = self.parse_block_statement();
+
+        let alternative = if self.expect_peek(Token::Else) {
+            if !self.expect_peek(Token::Lbrace) {
+                None
+            } else {
+                Some(self.parse_block_statement())
+            }
+        } else {
+            None
+        };
+
+        return Some(Expression::If {
+            condition: Box::new(condition),
+            consequence,
+            alternative,
+        });
+    }
+
+    fn parse_block_statement(&mut self) -> BlockStatement {
+        let mut statements = vec![];
+        self.next_token();
+
+        while !self.cur_token_is(Token::Rbrace) && !self.cur_token_is(Token::EOF) {
+            match self.parse_statement() {
+                Some(statement) => statements.push(statement),
+                None => {}
+            }
+            self.next_token();
+        }
+
+        BlockStatement(statements)
     }
 
     fn parse_grouped_expression(&mut self) -> Option<Expression> {

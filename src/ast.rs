@@ -16,10 +16,10 @@ impl fmt::Display for Program {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Identifier(pub String);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Let(Identifier, Expression),
     Return(Expression),
@@ -36,7 +36,7 @@ impl fmt::Display for Statement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Identifier(Identifier),
     Integer(i64),
@@ -76,7 +76,7 @@ impl fmt::Display for Expression {
                 repr.push(' ');
                 repr.push_str(consequence.to_string().as_str());
                 if let Some(alt) = alternative {
-                    repr.push_str("else ");
+                    repr.push_str(" else ");
                     repr.push_str(alt.to_string().as_str());
                 }
                 write!(f, "{}", repr)
@@ -86,14 +86,14 @@ impl fmt::Display for Expression {
     }
 }
 
-#[derive(Debug)]
-pub struct BlockStatement(Vec<Statement>);
+#[derive(Debug, PartialEq)]
+pub struct BlockStatement(pub Vec<Statement>);
 
 impl fmt::Display for BlockStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let BlockStatement(statements) = self;
         for statement in statements {
-            write!(f, "{}", statement)?
+            write!(f, "{{ {} }}", statement)?
         }
         Ok(())
     }

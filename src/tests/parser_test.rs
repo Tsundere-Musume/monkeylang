@@ -264,3 +264,120 @@ fn test_boolean_expression() {
         };
     }
 }
+
+#[test]
+fn test_if_expression() {
+    let input = "if (x < y) { x }";
+
+    let l = lexer::Lexer::new(input);
+    let mut parser = Parser::new(l);
+    let program = parser.parse_program();
+    println!("--\n{}\n--", program);
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program.statetments does not contain 1 statements. got={}",
+        program.statements.len()
+    );
+
+    match &program.statements[0] {
+        Statement::ExpressionStmt(Expression::If {
+            condition,
+            consequence,
+            alternative,
+        }) => {
+            assert_infix_expression(&**condition, "x", Token::Lt, "y");
+
+            assert_eq!(
+                1,
+                consequence.0.len(),
+                "consequence block doesn't contain 1 statement, got = {}",
+                consequence.0.len()
+            );
+
+            match &consequence.0[0] {
+                Statement::ExpressionStmt(Expression::Identifier(Identifier(val))) => {
+                    assert_eq!(val, "x")
+                }
+                _ => panic!("expected an identifier 'x', got = {}", &consequence.0[0]),
+            }
+
+            assert_eq!(*alternative, None, "alternative block not expected");
+        }
+        _ => panic!("not an if expression"),
+    }
+}
+
+#[test]
+fn test_if_else_expression() {
+    let input = "if (x < y) { x } else { y }";
+
+    let l = lexer::Lexer::new(input);
+    let mut parser = Parser::new(l);
+    let program = parser.parse_program();
+    println!("--\n{}\n--", program);
+    assert_eq!(
+        program.statements.len(),
+        1,
+        "program.statetments does not contain 1 statements. got={}",
+        program.statements.len()
+    );
+
+    match &program.statements[0] {
+        Statement::ExpressionStmt(Expression::If {
+            condition,
+            consequence,
+            alternative,
+        }) => {
+            assert_infix_expression(&**condition, "x", Token::Lt, "y");
+
+            assert_eq!(
+                1,
+                consequence.0.len(),
+                "consequence block doesn't contain 1 statement, got = {}",
+                consequence.0.len()
+            );
+
+            match &consequence.0[0] {
+                Statement::ExpressionStmt(Expression::Identifier(Identifier(val))) => {
+                    assert_eq!(val, "x")
+                }
+                _ => panic!("expected an identifier 'x', got = {}", &consequence.0[0]),
+            }
+
+            if let Some(alternative) = alternative {
+                assert_eq!(
+                    1,
+                    alternative.0.len(),
+                    "alternative block doesn't contain 1 statement, got = {}",
+                    alternative.0.len()
+                );
+
+                match &alternative.0[0] {
+                    Statement::ExpressionStmt(Expression::Identifier(Identifier(val))) => {
+                        assert_eq!(val, "y")
+                    }
+                    _ => panic!("expected an identifier 'y', got = {}", &alternative.0[0]),
+                }
+            } else {
+                panic!("expected an alternative block");
+            }
+        }
+        _ => panic!("not an if expression"),
+    }
+}
+
+//TODO: make these functions work with any literals
+fn assert_infix_expression(expression: &Expression, left: &str, operator: Token, right: &str) {
+    let expected = Expression::Infix {
+        left: Box::new(Expression::Identifier(Identifier(String::from(left)))),
+        op: operator,
+        right: Box::new(Expression::Identifier(Identifier(String::from(right)))),
+    };
+
+    assert_eq!(
+        *expression, expected,
+        "conditional expression don't match: {}, got: {}",
+        expression, expected
+    );
+}
