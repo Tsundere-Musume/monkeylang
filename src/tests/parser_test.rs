@@ -18,6 +18,7 @@ fn test_let_statement() {
     let l = lexer::Lexer::new(input);
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
+    check_parser_errors(&parser);
 
     assert_eq!(
         program.statements.len(),
@@ -37,13 +38,24 @@ fn test_let_statement() {
     }
 }
 
+fn check_parser_errors(parser: &Parser) {
+    let errors = parser.errors();
+    if errors.len() != 0 {
+        let mut error = format!("parser had {} errors\n", errors.len());
+        for e in errors {
+            error.push_str(format!("parser error: {}\n", e).as_str());
+        }
+        panic!("{}", error)
+    }
+}
+
 #[test]
 fn test_identifier_expr() {
     let input = "foobar";
     let l = lexer::Lexer::new(input);
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
-
+    check_parser_errors(&parser);
     assert_eq!(
         program.statements.len(),
         1,
@@ -75,7 +87,7 @@ fn test_return_statement() {
     let l = lexer::Lexer::new(input);
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
-
+    check_parser_errors(&parser);
     assert_eq!(
         program.statements.len(),
         3,
@@ -97,6 +109,7 @@ fn test_integer_literal_expression() {
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
 
+    check_parser_errors(&parser);
     assert_eq!(
         program.statements.len(),
         1,
@@ -120,6 +133,8 @@ fn test_parsing_prefix_expressions() {
         let l = lexer::Lexer::new(input);
         let mut parser = Parser::new(l);
         let program = parser.parse_program();
+
+        check_parser_errors(&parser);
         assert_eq!(
             1,
             program.statements.len(),
@@ -169,6 +184,8 @@ fn test_parsing_infix_expressions() {
         let l = lexer::Lexer::new(input);
         let mut parser = Parser::new(l);
         let program = parser.parse_program();
+
+        check_parser_errors(&parser);
         assert_eq!(
             1,
             program.statements.len(),
@@ -233,6 +250,8 @@ fn test_operator_precedence_parsing() {
         let l = lexer::Lexer::new(input);
         let mut parser = Parser::new(l);
         let program = parser.parse_program();
+
+        check_parser_errors(&parser);
         assert_eq!(program.to_string(), expected);
     }
 }
@@ -245,6 +264,7 @@ fn test_boolean_expression() {
         let l = lexer::Lexer::new(input);
         let mut parser = Parser::new(l);
         let program = parser.parse_program();
+        check_parser_errors(&parser);
         assert_eq!(
             program.statements.len(),
             1,
@@ -272,6 +292,8 @@ fn test_if_expression() {
     let l = lexer::Lexer::new(input);
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
+
+    // check_parser_errors(&parser);
     assert_eq!(
         program.statements.len(),
         1,
@@ -314,6 +336,8 @@ fn test_if_else_expression() {
     let l = lexer::Lexer::new(input);
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
+
+    check_parser_errors(&parser);
     assert_eq!(
         program.statements.len(),
         1,
@@ -388,6 +412,7 @@ fn test_function_literal_parsing() {
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
 
+    check_parser_errors(&parser);
     assert_eq!(
         program.statements.len(),
         1,
@@ -444,6 +469,7 @@ fn test_function_parameter_parsing() {
         let mut parser = Parser::new(l);
         let program = parser.parse_program();
 
+        check_parser_errors(&parser);
         match &program.statements[0] {
             Statement::ExpressionStmt(Expression::Function {
                 parameters,
@@ -479,6 +505,7 @@ fn test_call_expression_parsing() {
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
 
+    check_parser_errors(&parser);
     assert_eq!(
         program.statements.len(),
         1,
@@ -491,34 +518,51 @@ fn test_call_expression_parsing() {
             function,
             arguments,
         }) => {
-            match &**function{
-                Expression::Identifier(Identifier(name)) => assert_eq!(name, "add", "epected identifer name = {}, got = {}", "add", name),
+            match &**function {
+                Expression::Identifier(Identifier(name)) => assert_eq!(
+                    name, "add",
+                    "epected identifer name = {}, got = {}",
+                    "add", name
+                ),
                 _ => panic!("not an identifer expression"),
             };
 
-            assert_eq!(arguments.len(), 3, "expected 3 arguments, got = {}", arguments.len());
+            assert_eq!(
+                arguments.len(),
+                3,
+                "expected 3 arguments, got = {}",
+                arguments.len()
+            );
             assert_integer_literal(&arguments[0], 1);
-            let make_infix_int = |x, tok, y| {
-            Expression::Infix {
+            let make_infix_int = |x, tok, y| Expression::Infix {
                 left: Box::new(Expression::Integer(x)),
                 op: tok,
                 right: Box::new(Expression::Integer(y)),
-            }
             };
-            assert_eq!(arguments[1], make_infix_int(2, Token::Asterisk, 3), "expecting 2 * 3, got = {}", arguments[1]);
-            assert_eq!(arguments[2], make_infix_int(4, Token::Plus, 5), "expecting 4 + 5, got = {}", arguments[2]);
+            assert_eq!(
+                arguments[1],
+                make_infix_int(2, Token::Asterisk, 3),
+                "expecting 2 * 3, got = {}",
+                arguments[1]
+            );
+            assert_eq!(
+                arguments[2],
+                make_infix_int(4, Token::Plus, 5),
+                "expecting 4 + 5, got = {}",
+                arguments[2]
+            );
         }
         _ => panic!("expected a call expression",),
     };
 }
 
-
-fn assert_integer_literal(expression: &Expression, expected: i64){
+fn assert_integer_literal(expression: &Expression, expected: i64) {
     match expression {
-       Expression::Integer(val)  => assert_eq!(*val, expected, "integer value expected = {}, got = {}", expected, val),
-       _ => panic!("[{}]: not an integer literal expression", expression),
+        Expression::Integer(val) => assert_eq!(
+            *val, expected,
+            "integer value expected = {}, got = {}",
+            expected, val
+        ),
+        _ => panic!("[{}]: not an integer literal expression", expression),
     };
 }
-
-
-

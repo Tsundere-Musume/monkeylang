@@ -6,7 +6,6 @@ use crate::{
 
 #[derive(PartialEq, PartialOrd)]
 enum Precedence {
-    //TODO
     Lowest,
     Equals,
     LessGreater,
@@ -18,7 +17,7 @@ enum Precedence {
 
 pub struct Parser<'a> {
     l: Lexer<'a>,
-
+    errors: Vec<String>,
     cur_token: Token,
     peek_token: Token,
 }
@@ -27,6 +26,7 @@ impl<'a> Parser<'a> {
     pub fn new(l: Lexer<'a>) -> Self {
         let mut parser = Parser {
             l,
+            errors: vec![],
             cur_token: Token::EOF,
             peek_token: Token::EOF,
         };
@@ -35,6 +35,22 @@ impl<'a> Parser<'a> {
         parser.next_token();
 
         return parser;
+    }
+
+    pub fn errors(&self) -> &Vec<String> {
+        &self.errors
+    }
+
+    fn peek_error(&mut self, token: Token) {
+        self.errors.push(format!(
+            "expected next token to be {}, got {} instead.",
+            token, self.cur_token
+        ))
+    }
+
+    fn no_prefix_fn_error(&mut self) {
+        self.errors
+            .push(format!("no prefix fn associated for {}", self.cur_token));
     }
 
     pub fn next_token(&mut self) {
@@ -76,8 +92,8 @@ impl<'a> Parser<'a> {
         return stmt;
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
-        let mut left_exp = match &self.cur_token {
+    fn run_prefix_fn(&mut self) -> Option<Expression> {
+        match &self.cur_token {
             Token::Ident(val) => Some(Expression::Identifier(Identifier(val.clone()))),
             Token::Int(val) => Some(Expression::Integer(*val)),
             Token::Bang | Token::Minus => self.parse_prefix_expression(),
@@ -85,7 +101,17 @@ impl<'a> Parser<'a> {
             Token::Lparen => self.parse_grouped_expression(),
             Token::If => self.parse_if_expression(),
             Token::Function => self.parse_function_literal(),
-            _ => return None,
+            _ => {
+                self.no_prefix_fn_error();
+                None
+            }
+        }
+    }
+
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
+        let mut left_exp = match self.run_prefix_fn() {
+            Some(expr) => Some(expr),
+            None => return None,
         };
 
         while !self.peek_token_is(Token::Semicolon) && precedence < self.peek_precedence() {
@@ -139,7 +165,7 @@ impl<'a> Parser<'a> {
             arguments.push(self.parse_expression(Precedence::Lowest).unwrap());
         }
 
-        if !self.peek_token_is(Token::Rparen) {
+        if !self.expect_peek(Token::Rparen) {
             return vec![];
         }
 
@@ -340,6 +366,7 @@ impl<'a> Parser<'a> {
 
     fn expect_peek(&mut self, token: Token) -> bool {
         if token != self.peek_token {
+            self.peek_error(token);
             false
         } else {
             self.next_token();
