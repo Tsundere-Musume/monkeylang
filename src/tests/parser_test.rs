@@ -10,28 +10,41 @@ use crate::{
 //TODO: parser errors
 #[test]
 fn test_let_statement() {
-    let input = r#"
-        let x = 5;
-        let y = 10;
-        let foobar = 838383;
-        "#;
-    let l = lexer::Lexer::new(input);
-    let mut parser = Parser::new(l);
-    let program = parser.parse_program();
-    check_parser_errors(&parser);
+    let tests = vec![
+        ("let x = 5;", "x", Expression::Integer(5)),
+        ("let y = true;", "y", Expression::Boolean(true)),
+        (
+            "let foobar = major;",
+            "foobar",
+            Expression::Identifier(Identifier(String::from("major"))),
+        ),
+    ];
+    for (input, expected_ident, expected_expr) in tests {
+        let l = lexer::Lexer::new(input);
+        let mut parser = Parser::new(l);
+        let program = parser.parse_program();
+        check_parser_errors(&parser);
 
-    assert_eq!(
-        program.statements.len(),
-        3,
-        "program.statetments does not contain 3 statements. got={}",
-        program.statements.len()
-    );
+        assert_eq!(
+            program.statements.len(),
+            1,
+            "program.statetments does not contain 1 statements. got={}",
+            program.statements.len()
+        );
 
-    let tests = vec!["x", "y", "foobar"];
-    for (idx, stmt) in program.statements.iter().enumerate() {
+        let stmt = &program.statements[0];
         match stmt {
-            Statement::Let(Identifier(name), _) => {
-                assert_eq!(tests[idx], name, "identifier name doesn't match.")
+            Statement::Let(Identifier(name), expression) => {
+                assert_eq!(
+                    expected_ident, name,
+                    "identifier name doesn't match : {}, got = {}",
+                    expected_ident, name
+                );
+                assert_eq!(
+                    *expression, expected_expr,
+                    "rvalue doesn't match : {}, got = {}",
+                    expected_expr, expression
+                );
             }
             _ => assert!(false, "not a let statement"),
         }
@@ -79,25 +92,37 @@ fn test_identifier_expr() {
 
 #[test]
 fn test_return_statement() {
-    let input = r#"
-            return 5;
-            return 10;
-            return 993322;
-        "#;
-    let l = lexer::Lexer::new(input);
-    let mut parser = Parser::new(l);
-    let program = parser.parse_program();
-    check_parser_errors(&parser);
-    assert_eq!(
-        program.statements.len(),
-        3,
-        "program.statetments does not contain 3 statements. got={}",
-        program.statements.len()
-    );
+    let tests = vec![
+        ("return 5", Expression::Integer(5)),
+        ("return false;", Expression::Boolean(false)),
+        (
+            "return major",
+            Expression::Identifier(Identifier(String::from("major"))),
+        ),
+    ];
+    for (input, expected_expr) in tests {
+        let l = lexer::Lexer::new(input);
+        let mut parser = Parser::new(l);
+        let program = parser.parse_program();
+        check_parser_errors(&parser);
 
-    for stmt in program.statements {
-        if !matches!(stmt, Statement::Return(_)) {
-            panic!("not a return statement");
+        assert_eq!(
+            program.statements.len(),
+            1,
+            "program.statetments does not contain 1 statements. got={}",
+            program.statements.len()
+        );
+
+        let stmt = &program.statements[0];
+        match stmt {
+            Statement::Return(expr) => {
+                assert_eq!(
+                    *expr, expected_expr,
+                    "return value mismatch: expected = {}, got = {}",
+                    expected_expr, expr
+                )
+            }
+            _ => panic!("not a return statement"),
         }
     }
 }
@@ -293,7 +318,7 @@ fn test_if_expression() {
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
 
-    // check_parser_errors(&parser);
+    check_parser_errors(&parser);
     assert_eq!(
         program.statements.len(),
         1,

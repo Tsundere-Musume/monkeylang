@@ -242,7 +242,8 @@ impl<'a> Parser<'a> {
 
         let consequence = self.parse_block_statement();
 
-        let alternative = if self.expect_peek(Token::Else) {
+        let alternative = if self.peek_token_is(Token::Else) {
+            self.next_token();
             if !self.expect_peek(Token::Lbrace) {
                 None
             } else {
@@ -339,10 +340,16 @@ impl<'a> Parser<'a> {
         self.next_token();
 
         // WARN: doesn't check for EOF
-        while !self.cur_token_is(Token::Semicolon) {
+        let expression = match self.parse_expression(Precedence::Lowest) {
+            Some(expr) => expr,
+            None => todo!("couldn't parse an expression"),
+        };
+
+        if self.peek_token_is(Token::Semicolon) {
             self.next_token();
         }
-        return Some(Statement::Return(Expression::Expression));
+
+        return Some(Statement::Return(expression));
     }
 
     fn parse_let_statement(&mut self) -> Option<Statement> {
@@ -356,12 +363,19 @@ impl<'a> Parser<'a> {
             return None;
         }
 
+        self.next_token();
+
         // WARN: doesn't check for EOF
-        while !self.cur_token_is(Token::Semicolon) {
+        let expression = match self.parse_expression(Precedence::Lowest) {
+            Some(expr) => expr,
+            None => todo!("couldn't parse an expression"),
+        };
+
+        if self.peek_token_is(Token::Semicolon) {
             self.next_token();
         }
 
-        return Some(Statement::Let(Identifier(name), Expression::Expression));
+        return Some(Statement::Let(Identifier(name), expression));
     }
 
     fn expect_peek(&mut self, token: Token) -> bool {
