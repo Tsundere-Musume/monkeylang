@@ -59,6 +59,10 @@ pub enum Expression {
         parameters: Vec<Expression>,
         body: BlockStatement,
     },
+    Call{
+        function: Box<Expression>,
+        arguments: Vec<Expression>,
+    },
     Expression,
 }
 
@@ -97,6 +101,19 @@ impl fmt::Display for Expression {
                     acc
                 });
                 write!(f, "fn({}) {}", parameters, body)
+            }
+            Expression::Call { function, arguments } => {
+                let arguments = arguments.iter().fold(String::new(), |mut acc, argument| {
+                    if acc.is_empty() {
+                       acc.push_str(argument.to_string().as_str());
+                    } else {
+                        acc.push_str(", ");
+                        acc.push_str(argument.to_string().as_str());
+                    }
+                    acc
+                });
+
+                write!(f, "{}({})", function, arguments)
             }
             Expression::Expression => write!(f, ""),
         }

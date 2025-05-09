@@ -102,10 +102,48 @@ impl<'a> Parser<'a> {
                     //TODO: check unwrap thing
                     self.parse_infix_expression(left_exp.unwrap())
                 }
+                Token::Lparen => {
+                    self.next_token();
+                    self.parse_call_expression(left_exp.unwrap())
+                }
                 _ => break,
             }
         }
         return left_exp;
+    }
+
+    fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
+        let arguments = self.parse_call_arguments();
+        Some(Expression::Call {
+            function: Box::new(function),
+            arguments,
+        })
+    }
+
+    fn parse_call_arguments(&mut self) -> Vec<Expression> {
+        let mut arguments = vec![];
+
+        if self.peek_token_is(Token::Rparen) {
+            self.next_token();
+            return arguments;
+        }
+
+        self.next_token();
+        //WARN: not checked
+        arguments.push(self.parse_expression(Precedence::Lowest).unwrap());
+
+        while self.peek_token_is(Token::Comma) {
+            self.next_token();
+            self.next_token();
+
+            arguments.push(self.parse_expression(Precedence::Lowest).unwrap());
+        }
+
+        if !self.peek_token_is(Token::Rparen) {
+            return vec![];
+        }
+
+        arguments
     }
 
     fn parse_function_literal(&mut self) -> Option<Expression> {
@@ -266,6 +304,7 @@ impl<'a> Parser<'a> {
             Token::Lt => Precedence::LessGreater,
             Token::Gt => Precedence::LessGreater,
             Token::NotEq => Precedence::Equals,
+            Token::Lparen => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }
